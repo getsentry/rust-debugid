@@ -1,7 +1,14 @@
 [package]
 name = "debugid"
 version = "0.1.0"
-authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
+license = "Apache-2.0"
+description = "Common reusable types for implementing the sentry.io protocol."
+homepage = "https://sentry.io/"
+repository = "https://github.com/getsentry/rust-debugid"
+documentation = "https://docs.rs/debugid"
+keywords = ["sentry", "debugid", "breakpad", "crashpad"]
+readme = "README.md"
+authors = ["Sentry <hello@sentry.io>"]
 
 [dependencies]
 uuid = "0.6.2"

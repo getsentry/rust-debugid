@@ -1,0 +1,15 @@
+[package]
+name = "debugid"
+version = "0.1.0"
+authors = ["Armin Ronacher <armin.ronacher@active-4.com>"]
+
+[dependencies]
+uuid = "0.6.2"
+regex = "0.2.10"
+lazy_static = "1.0.0"
+serde = { version = "1.0.33", optional = true }
+serde_plain = { version = "0.3.0", optional = true }
+
+[features]
+default = []
+with_serde = ["serde", "serde_plain"]

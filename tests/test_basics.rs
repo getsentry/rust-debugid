@@ -1,5 +1,5 @@
-extern crate uuid;
 extern crate debugid;
+extern crate uuid;
 use std::str::FromStr;
 
 use uuid::Uuid;
@@ -192,6 +192,9 @@ fn test_debug_id_debug() {
         10,
     );
 
-    assert_eq!(format!("{:?}", id), "DebugId { uuid: Uuid(\"\
-        dfb8e43a-f242-3d73-a453-aeb6a777ef75\"), appendix: 10 }");
+    assert_eq!(
+        format!("{:?}", id),
+        "DebugId { uuid: Uuid(\"\
+         dfb8e43a-f242-3d73-a453-aeb6a777ef75\"), appendix: 10 }"
+    );
 }

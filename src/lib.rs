@@ -44,8 +44,9 @@
 //!
 //! # fn main() { foo().unwrap() }
 //! ```
+#[macro_use]
+extern crate lazy_static;
 extern crate regex;
-#[macro_use] extern crate lazy_static;
 extern crate uuid;
 
 #[cfg(feature = "with_serde")]
@@ -188,9 +189,7 @@ impl str::FromStr for DebugId {
     type Err = DebugIdParseError;
 
     fn from_str(string: &str) -> Result<DebugId, DebugIdParseError> {
-        let captures = DEBUG_ID_RE
-            .captures(string)
-            .ok_or(DebugIdParseError)?;
+        let captures = DEBUG_ID_RE.captures(string).ok_or(DebugIdParseError)?;
         let uuid = captures
             .get(1)
             .unwrap()

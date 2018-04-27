@@ -1,4 +1,5 @@
 extern crate debugid;
+extern crate serde_json;
 extern crate uuid;
 use std::str::FromStr;
 
@@ -194,7 +195,35 @@ fn test_debug_id_debug() {
 
     assert_eq!(
         format!("{:?}", id),
-        "DebugId { uuid: Uuid(\"\
-         dfb8e43a-f242-3d73-a453-aeb6a777ef75\"), appendix: 10 }"
+        "DebugId { uuid: \"dfb8e43a-f242-3d73-a453-aeb6a777ef75\", appendix: 10 }"
+    );
+}
+
+#[test]
+#[cfg(feature = "with_serde")]
+fn test_serde_serialize() {
+    let id = DebugId::from_parts(
+        Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
+        10,
+    );
+
+    assert_eq!(
+        serde_json::to_string(&id).expect("could not serialize"),
+        "\"dfb8e43a-f242-3d73-a453-aeb6a777ef75-a\""
+    )
+}
+
+#[test]
+#[cfg(feature = "with_serde")]
+fn test_serde_deserialize() {
+    let id: DebugId = serde_json::from_str("\"dfb8e43a-f242-3d73-a453-aeb6a777ef75-a\"")
+        .expect("could not deserialize");
+
+    assert_eq!(
+        id,
+        DebugId::from_parts(
+            Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
+            10,
+        )
     );
 }

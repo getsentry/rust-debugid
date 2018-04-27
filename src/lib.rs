@@ -52,10 +52,6 @@ extern crate uuid;
 #[cfg(feature = "with_serde")]
 extern crate serde;
 
-#[cfg(feature = "with_serde")]
-#[macro_use]
-extern crate serde_plain;
-
 use std::fmt;
 use std::str;
 use std::error;
@@ -63,7 +59,8 @@ use regex::Regex;
 use uuid::Uuid;
 
 lazy_static! {
-    static ref DEBUG_ID_RE: Regex = Regex::new(r"(?ix)
+    static ref DEBUG_ID_RE: Regex = Regex::new(
+        r"(?ix)
         ^
             ([0-9a-f]{8}-?
              [0-9a-f]{4}-?
@@ -73,7 +70,8 @@ lazy_static! {
             -?
             ([0-9a-f]{1,8})?
         $
-    ").unwrap();
+    "
+    ).unwrap();
 }
 
 /// Indicates a parsing error
@@ -169,7 +167,7 @@ impl DebugId {
 impl fmt::Debug for DebugId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("DebugId")
-            .field("uuid", &self.uuid())
+            .field("uuid", &self.uuid().hyphenated().to_string())
             .field("appendix", &self.appendix())
             .finish()
     }
@@ -218,10 +216,40 @@ impl From<(Uuid, u32)> for DebugId {
 }
 
 #[cfg(feature = "with_serde")]
-derive_deserialize_from_str!(DebugId, "DebugId");
+mod serde_support {
+    use serde::de::{self, Deserialize, Deserializer, Unexpected, Visitor};
+    use serde::ser::{Serialize, Serializer};
 
-#[cfg(feature = "with_serde")]
-derive_serialize_from_display!(DebugId);
+    use super::*;
+
+    impl<'de> Deserialize<'de> for DebugId {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            struct V;
+
+            impl<'de> Visitor<'de> for V {
+                type Value = DebugId;
+
+                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    formatter.write_str("DebugId")
+                }
+
+                fn visit_str<E: de::Error>(self, value: &str) -> Result<DebugId, E> {
+                    value
+                        .parse()
+                        .map_err(|_| de::Error::invalid_value(Unexpected::Str(value), &self))
+                }
+            }
+
+            deserializer.deserialize_str(V)
+        }
+    }
+
+    impl Serialize for DebugId {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.serialize_str(&self.to_string())
+        }
+    }
+}
 
 /// Wrapper around `DebugId` for Breakpad formatting.
 ///

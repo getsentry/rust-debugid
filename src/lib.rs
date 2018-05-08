@@ -19,7 +19,7 @@
 //! # extern crate debugid;
 //! use debugid::DebugId;
 //!
-//! # fn foo() -> Result<(), ::debugid::DebugIdParseError> {
+//! # fn foo() -> Result<(), ::debugid::ParseDebugIdError> {
 //! let id: DebugId = "dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".parse()?;
 //! assert_eq!("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".to_string(), id.to_string());
 //! # Ok(())
@@ -36,7 +36,7 @@
 //! # extern crate debugid;
 //! use debugid::DebugId;
 //!
-//! # fn foo() -> Result<(), ::debugid::DebugIdParseError> {
+//! # fn foo() -> Result<(), ::debugid::ParseDebugIdError> {
 //! let id: DebugId = "dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".parse()?;
 //! assert_eq!(id.breakpad().to_string(), "DFB8E43AF2423D73A453AEB6A777EF75a");
 //! # Ok(())
@@ -76,15 +76,15 @@ lazy_static! {
 
 /// Indicates a parsing error
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub struct DebugIdParseError;
+pub struct ParseDebugIdError;
 
-impl error::Error for DebugIdParseError {
+impl error::Error for ParseDebugIdError {
     fn description(&self) -> &str {
         "invalid debug identifier"
     }
 }
 
-impl fmt::Display for DebugIdParseError {
+impl fmt::Display for ParseDebugIdError {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         use std::error::Error;
         write!(f, "{}", self.description())
@@ -106,7 +106,7 @@ impl fmt::Display for DebugIdParseError {
 /// use std::str::FromStr;
 /// use debugid::DebugId;
 ///
-/// # fn foo() -> Result<(), ::debugid::DebugIdParseError> {
+/// # fn foo() -> Result<(), ::debugid::ParseDebugIdError> {
 /// let id = DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a")?;
 /// assert_eq!("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".to_string(), id.to_string());
 /// # Ok(())
@@ -138,7 +138,7 @@ impl DebugId {
     }
 
     /// Parses a breakpad identifier from a string.
-    pub fn from_breakpad(string: &str) -> Result<DebugId, DebugIdParseError> {
+    pub fn from_breakpad(string: &str) -> Result<DebugId, ParseDebugIdError> {
         // Technically, we are are too permissive here by allowing dashes, but
         // we are complete.
         string.parse()
@@ -184,20 +184,20 @@ impl fmt::Display for DebugId {
 }
 
 impl str::FromStr for DebugId {
-    type Err = DebugIdParseError;
+    type Err = ParseDebugIdError;
 
-    fn from_str(string: &str) -> Result<DebugId, DebugIdParseError> {
-        let captures = DEBUG_ID_RE.captures(string).ok_or(DebugIdParseError)?;
+    fn from_str(string: &str) -> Result<DebugId, ParseDebugIdError> {
+        let captures = DEBUG_ID_RE.captures(string).ok_or(ParseDebugIdError)?;
         let uuid = captures
             .get(1)
             .unwrap()
             .as_str()
             .parse()
-            .map_err(|_| DebugIdParseError)?;
+            .map_err(|_| ParseDebugIdError)?;
         let appendix = captures
             .get(2)
             .map_or(Ok(0), |s| u32::from_str_radix(s.as_str(), 16))
-            .map_err(|_| DebugIdParseError)?;
+            .map_err(|_| ParseDebugIdError)?;
         Ok(DebugId::from_parts(uuid, appendix))
     }
 }
@@ -260,7 +260,7 @@ mod serde_support {
 /// use std::str::FromStr;
 /// use debugid::DebugId;
 ///
-/// # fn foo() -> Result<(), debugid::DebugIdParseError> {
+/// # fn foo() -> Result<(), debugid::ParseDebugIdError> {
 /// let id = DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75a")?;
 /// assert_eq!("DFB8E43AF2423D73A453AEB6A777EF75a".to_string(), id.breakpad().to_string());
 /// # Ok(())

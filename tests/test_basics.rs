@@ -85,7 +85,7 @@ fn test_to_string_short() {
 fn test_to_string_long() {
     let id = DebugId::from_parts(
         Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-        42_77_009_102,
+        4_277_009_102,
     );
 
     assert_eq!(

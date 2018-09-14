@@ -52,10 +52,10 @@ extern crate uuid;
 #[cfg(feature = "with_serde")]
 extern crate serde;
 
+use regex::Regex;
+use std::error;
 use std::fmt;
 use std::str;
-use std::error;
-use regex::Regex;
 use uuid::Uuid;
 
 lazy_static! {
@@ -167,7 +167,7 @@ impl DebugId {
 impl fmt::Debug for DebugId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.debug_struct("DebugId")
-            .field("uuid", &self.uuid().hyphenated().to_string())
+            .field("uuid", &self.uuid().to_hyphenated_ref().to_string())
             .field("appendix", &self.appendix())
             .finish()
     }
@@ -278,7 +278,7 @@ impl<'a> fmt::Display for BreakpadFormat<'a> {
         write!(
             f,
             "{:X}{:x}",
-            self.inner.uuid().simple(),
+            self.inner.uuid().to_simple_ref(),
             self.inner.appendix()
         )
     }

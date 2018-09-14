@@ -15,7 +15,7 @@ matrix:
     - env: SUITE=lint
     - env: SUITE=test
     - env: SUITE=test
-      rust: "1.19.0"
+      rust: "1.22.0"
 
 notifications:
   webhooks:

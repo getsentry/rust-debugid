@@ -3,8 +3,8 @@ extern crate serde_json;
 extern crate uuid;
 use std::str::FromStr;
 
-use uuid::Uuid;
 use debugid::DebugId;
+use uuid::Uuid;
 
 #[test]
 fn test_parse_zero() {
@@ -34,7 +34,7 @@ fn test_parse_long() {
         DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-feedface").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            4277009102,
+            4_277_009_102,
         )
     );
 }
@@ -45,7 +45,7 @@ fn test_parse_compact() {
         DebugId::from_str("dfb8e43af2423d73a453aeb6a777ef75feedface").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            4277009102,
+            4_277_009_102,
         )
     );
 }
@@ -56,7 +56,7 @@ fn test_parse_upper() {
         DebugId::from_str("DFB8E43A-F242-3D73-A453-AEB6A777EF75-FEEDFACE").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            4277009102,
+            4_277_009_102,
         )
     );
 }
@@ -85,7 +85,7 @@ fn test_to_string_short() {
 fn test_to_string_long() {
     let id = DebugId::from_parts(
         Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-        4277009102,
+        42_77_009_102,
     );
 
     assert_eq!(
@@ -132,7 +132,7 @@ fn test_parse_breakpad_long() {
         DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75feedface").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
-            4277009102,
+            4_277_009_102,
         )
     );
 }
@@ -167,7 +167,7 @@ fn test_to_string_breakpad_short() {
 fn test_to_string_breakpad_long() {
     let id = DebugId::from_parts(
         Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
-        4277009102,
+        4_277_009_102,
     );
 
     assert_eq!(

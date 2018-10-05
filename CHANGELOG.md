@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.3.1
+
+Add a conversion from Microsoft GUIDs.
+
 ## 0.3.0
 
 Update to `uuid:0.7.0`.

@@ -137,6 +137,20 @@ impl DebugId {
         }
     }
 
+    /// Constructs a `DebugId` from a Microsoft little-endian GUID and age.
+    pub fn from_guid_age(guid: &[u8], age: u32) -> Result<DebugId, ParseDebugIdError> {
+        if guid.len() != 16 {
+            return Err(ParseDebugIdError);
+        }
+
+        let uuid = Uuid::from_bytes([
+            guid[3], guid[2], guid[1], guid[0], guid[5], guid[4], guid[7], guid[6], guid[8],
+            guid[9], guid[10], guid[11], guid[12], guid[13], guid[14], guid[15],
+        ]);
+
+        Ok(DebugId::from_parts(uuid, age))
+    }
+
     /// Parses a breakpad identifier from a string.
     pub fn from_breakpad(string: &str) -> Result<DebugId, ParseDebugIdError> {
         // Technically, we are are too permissive here by allowing dashes, but

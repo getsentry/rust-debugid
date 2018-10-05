@@ -105,6 +105,19 @@ fn test_parse_error_long() {
 }
 
 #[test]
+fn test_from_guid_age() {
+    let guid = [
+        0x98, 0xd1, 0xef, 0xe8, 0x6e, 0xf8, 0xfe, 0x45, 0x9d, 0xdb, 0xe1, 0x13, 0x82, 0xb5, 0xd1,
+        0xc9,
+    ];
+
+    assert_eq!(
+        DebugId::from_guid_age(&guid[..], 1).unwrap(),
+        DebugId::from_str("e8efd198-f86e-45fe-9ddb-e11382b5d1c9-1").unwrap()
+    )
+}
+
+#[test]
 fn test_parse_breakpad_zero() {
     assert_eq!(
         DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF750").unwrap(),

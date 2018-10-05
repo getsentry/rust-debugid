@@ -5,3 +5,4 @@ github:
 targets:
   - name: crates
   - name: github
+changelogPolicy: simple

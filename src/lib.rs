@@ -62,16 +62,24 @@ lazy_static! {
     static ref DEBUG_ID_RE: Regex = Regex::new(
         r"(?ix)
         ^
-            ([0-9a-f]{8}-?
-             [0-9a-f]{4}-?
-             [0-9a-f]{4}-?
-             [0-9a-f]{4}-?
-             [0-9a-f]{12})
+            (?P<uuid>
+                [0-9a-f]{8}-?
+                [0-9a-f]{4}-?
+                [0-9a-f]{4}-?
+                [0-9a-f]{4}-?
+                [0-9a-f]{12}
+            )
             -?
-            ([0-9a-f]{1,8})?
+            (?P<appendix>
+                [0-9a-f]{1,8}
+            )?
+            ( # ignored tail
+                (?:-?[0-9a-f]){1,24}
+            )?
         $
     "
-    ).unwrap();
+    )
+    .unwrap();
 }
 
 /// Indicates a parsing error
@@ -203,13 +211,13 @@ impl str::FromStr for DebugId {
     fn from_str(string: &str) -> Result<DebugId, ParseDebugIdError> {
         let captures = DEBUG_ID_RE.captures(string).ok_or(ParseDebugIdError)?;
         let uuid = captures
-            .get(1)
+            .name("uuid")
             .unwrap()
             .as_str()
             .parse()
             .map_err(|_| ParseDebugIdError)?;
         let appendix = captures
-            .get(2)
+            .name("appendix")
             .map_or(Ok(0), |s| u32::from_str_radix(s.as_str(), 16))
             .map_err(|_| ParseDebugIdError)?;
         Ok(DebugId::from_parts(uuid, appendix))

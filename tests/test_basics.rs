@@ -23,7 +23,7 @@ fn test_parse_short() {
         DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            10,
+            0xa,
         )
     );
 }
@@ -34,7 +34,7 @@ fn test_parse_long() {
         DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-feedface").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            4_277_009_102,
+            0xfeed_face,
         )
     );
 }
@@ -45,7 +45,7 @@ fn test_parse_compact() {
         DebugId::from_str("dfb8e43af2423d73a453aeb6a777ef75feedface").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            4_277_009_102,
+            0xfeed_face,
         )
     );
 }
@@ -56,7 +56,18 @@ fn test_parse_upper() {
         DebugId::from_str("DFB8E43A-F242-3D73-A453-AEB6A777EF75-FEEDFACE").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-            4_277_009_102,
+            0xfeed_face,
+        )
+    );
+}
+
+#[test]
+fn test_parse_ignores_tail() {
+    assert_eq!(
+        DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-feedface-1-2-3").unwrap(),
+        DebugId::from_parts(
+            Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
+            0xfeed_face,
         )
     );
 }
@@ -85,7 +96,7 @@ fn test_to_string_short() {
 fn test_to_string_long() {
     let id = DebugId::from_parts(
         Uuid::parse_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),
-        4_277_009_102,
+        0xfeed_face,
     );
 
     assert_eq!(
@@ -97,11 +108,6 @@ fn test_to_string_long() {
 #[test]
 fn test_parse_error_short() {
     assert!(DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef7").is_err());
-}
-
-#[test]
-fn test_parse_error_long() {
-    assert!(DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-feedface1").is_err())
 }
 
 #[test]
@@ -145,7 +151,18 @@ fn test_parse_breakpad_long() {
         DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75feedface").unwrap(),
         DebugId::from_parts(
             Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
-            4_277_009_102,
+            0xfeed_face,
+        )
+    );
+}
+
+#[test]
+fn test_parse_breakpad_with_tail() {
+    assert_eq!(
+        DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75feedface123").unwrap(),
+        DebugId::from_parts(
+            Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
+            0xfeed_face,
         )
     );
 }
@@ -180,7 +197,7 @@ fn test_to_string_breakpad_short() {
 fn test_to_string_breakpad_long() {
     let id = DebugId::from_parts(
         Uuid::parse_str("DFB8E43AF2423D73A453AEB6A777EF75").unwrap(),
-        4_277_009_102,
+        0xfeed_face,
     );
 
     assert_eq!(
@@ -192,11 +209,6 @@ fn test_to_string_breakpad_long() {
 #[test]
 fn test_parse_breakpad_error_short() {
     assert!(DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF7").is_err());
-}
-
-#[test]
-fn test_parse_breakpad_error_long() {
-    assert!(DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75feedface1").is_err())
 }
 
 #[test]

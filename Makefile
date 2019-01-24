@@ -17,16 +17,16 @@ cargotest:
 .PHONY: cargotest
 
 format-check:
-	@rustup component add rustfmt-preview 2> /dev/null
+	@rustup component add rustfmt 2> /dev/null
 	@cargo fmt -- --check
 .PHONY: format-check
 
 format:
-	@rustup component add rustfmt-preview 2> /dev/null
+	@rustup component add rustfmt 2> /dev/null
 	@cargo fmt
 .PHONY: format
 
 lint:
-	@rustup component add clippy-preview 2> /dev/null
-	@cargo clippy --all-features -- -D clippy
+	@rustup component add clippy 2> /dev/null
+	@cargo clippy --all-features --tests -- -D clippy::all
 .PHONY: lint

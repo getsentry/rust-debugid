@@ -44,13 +44,6 @@
 //!
 //! # fn main() { foo().unwrap() }
 //! ```
-#[macro_use]
-extern crate lazy_static;
-extern crate regex;
-extern crate uuid;
-
-#[cfg(feature = "with_serde")]
-extern crate serde;
 
 use regex::Regex;
 use std::error;
@@ -58,7 +51,7 @@ use std::fmt;
 use std::str;
 use uuid::Uuid;
 
-lazy_static! {
+lazy_static::lazy_static! {
     static ref DEBUG_ID_RE: Regex = Regex::new(
         r"(?ix)
         ^
@@ -93,7 +86,7 @@ impl error::Error for ParseDebugIdError {
 }
 
 impl fmt::Display for ParseDebugIdError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         use std::error::Error;
         write!(f, "{}", self.description())
     }
@@ -181,13 +174,13 @@ impl DebugId {
 
     /// Returns a wrapper which when formatted via `fmt::Display` will format a
     /// a breakpad identifier.
-    pub fn breakpad(&self) -> BreakpadFormat {
+    pub fn breakpad(&self) -> BreakpadFormat<'_> {
         BreakpadFormat { inner: self }
     }
 }
 
 impl fmt::Debug for DebugId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DebugId")
             .field("uuid", &self.uuid().to_hyphenated_ref().to_string())
             .field("appendix", &self.appendix())
@@ -196,7 +189,7 @@ impl fmt::Debug for DebugId {
 }
 
 impl fmt::Display for DebugId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.uuid.fmt(f)?;
         if self.appendix > 0 {
             write!(f, "-{:x}", { self.appendix })?;
@@ -296,7 +289,7 @@ pub struct BreakpadFormat<'a> {
 }
 
 impl<'a> fmt::Display for BreakpadFormat<'a> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
             "{:X}{:x}",

@@ -1,6 +1,3 @@
-extern crate debugid;
-extern crate serde_json;
-extern crate uuid;
 use std::str::FromStr;
 
 use debugid::DebugId;

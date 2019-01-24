@@ -9,6 +9,7 @@ documentation = "https://docs.rs/debugid"
 keywords = ["sentry", "debugid", "breakpad", "crashpad"]
 readme = "README.md"
 authors = ["Sentry <hello@sentry.io>"]
+edition = "2018"
 
 [features]
 default = []

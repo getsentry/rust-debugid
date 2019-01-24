@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.4.0
+
+- **Breaking Change**: Require Rust 1.31.0 (Edition 2018) or newer
+- Make parsing from string future-proof
+
 ## 0.3.1
 
 Add a conversion from Microsoft GUIDs.

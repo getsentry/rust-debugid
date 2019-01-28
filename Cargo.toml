@@ -11,10 +11,6 @@ readme = "README.md"
 authors = ["Sentry <hello@sentry.io>"]
 edition = "2018"
 
-[features]
-default = []
-with_serde = ["serde"]
-
 [dependencies]
 uuid = "0.7.1"
 regex = "1.1.0"

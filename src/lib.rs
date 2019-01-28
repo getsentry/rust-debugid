@@ -230,7 +230,7 @@ impl From<(Uuid, u32)> for DebugId {
     }
 }
 
-#[cfg(feature = "with_serde")]
+#[cfg(feature = "serde")]
 mod serde_support {
     use serde::de::{self, Deserialize, Deserializer, Unexpected, Visitor};
     use serde::ser::{Serialize, Serializer};

@@ -208,42 +208,6 @@ impl From<(Uuid, u32)> for DebugId {
     }
 }
 
-#[cfg(feature = "serde")]
-mod serde_support {
-    use serde::de::{self, Deserialize, Deserializer, Unexpected, Visitor};
-    use serde::ser::{Serialize, Serializer};
-
-    use super::*;
-
-    impl<'de> Deserialize<'de> for DebugId {
-        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-            struct V;
-
-            impl<'de> Visitor<'de> for V {
-                type Value = DebugId;
-
-                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
-                    formatter.write_str("DebugId")
-                }
-
-                fn visit_str<E: de::Error>(self, value: &str) -> Result<DebugId, E> {
-                    value
-                        .parse()
-                        .map_err(|_| de::Error::invalid_value(Unexpected::Str(value), &self))
-                }
-            }
-
-            deserializer.deserialize_str(V)
-        }
-    }
-
-    impl Serialize for DebugId {
-        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-            serializer.serialize_str(&self.to_string())
-        }
-    }
-}
-
 /// Wrapper around `DebugId` for Breakpad formatting.
 ///
 /// **Example:**
@@ -344,5 +308,54 @@ impl str::FromStr for CodeId {
 
     fn from_str(string: &str) -> Result<Self, ParseCodeIdError> {
         Ok(Self::new(string.into()))
+    }
+}
+
+#[cfg(feature = "serde")]
+mod serde_support {
+    use serde::de::{self, Deserialize, Deserializer, Unexpected, Visitor};
+    use serde::ser::{Serialize, Serializer};
+
+    use super::*;
+
+    impl Serialize for CodeId {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.serialize_str(self.as_str())
+        }
+    }
+
+    impl<'de> Deserialize<'de> for CodeId {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            let string = String::deserialize(deserializer)?;
+            Ok(CodeId::new(string))
+        }
+    }
+
+    impl<'de> Deserialize<'de> for DebugId {
+        fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+            struct V;
+
+            impl<'de> Visitor<'de> for V {
+                type Value = DebugId;
+
+                fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                    formatter.write_str("DebugId")
+                }
+
+                fn visit_str<E: de::Error>(self, value: &str) -> Result<DebugId, E> {
+                    value
+                        .parse()
+                        .map_err(|_| de::Error::invalid_value(Unexpected::Str(value), &self))
+                }
+            }
+
+            deserializer.deserialize_str(V)
+        }
+    }
+
+    impl Serialize for DebugId {
+        fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+            serializer.serialize_str(&self.to_string())
+        }
     }
 }

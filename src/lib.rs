@@ -297,9 +297,7 @@ impl fmt::Display for CodeId {
 
 impl fmt::Debug for CodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "CodeId(")?;
-        fmt::Display::fmt(self, f)?;
-        write!(f, ")")
+        f.debug_tuple("CodeId").field(&self.as_str()).finish()
     }
 }
 

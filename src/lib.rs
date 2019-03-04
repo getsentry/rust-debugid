@@ -45,6 +45,8 @@
 //! # fn main() { foo().unwrap() }
 //! ```
 
+#![warn(missing_docs)]
+
 use regex::Regex;
 use std::error;
 use std::fmt;
@@ -75,8 +77,8 @@ lazy_static::lazy_static! {
     .unwrap();
 }
 
-/// Indicates a parsing error
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// Indicates a parsing error.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseDebugIdError;
 
 impl error::Error for ParseDebugIdError {
@@ -125,12 +127,12 @@ pub struct DebugId {
 
 impl DebugId {
     /// Constructs a `DebugId` from its `uuid`.
-    pub fn from_uuid(uuid: Uuid) -> DebugId {
+    pub fn from_uuid(uuid: Uuid) -> Self {
         Self::from_parts(uuid, 0)
     }
 
     /// Constructs a `DebugId` from its `uuid` and `appendix` parts.
-    pub fn from_parts(uuid: Uuid, appendix: u32) -> DebugId {
+    pub fn from_parts(uuid: Uuid, appendix: u32) -> Self {
         DebugId {
             uuid,
             appendix,
@@ -139,7 +141,7 @@ impl DebugId {
     }
 
     /// Constructs a `DebugId` from a Microsoft little-endian GUID and age.
-    pub fn from_guid_age(guid: &[u8], age: u32) -> Result<DebugId, ParseDebugIdError> {
+    pub fn from_guid_age(guid: &[u8], age: u32) -> Result<Self, ParseDebugIdError> {
         if guid.len() != 16 {
             return Err(ParseDebugIdError);
         }
@@ -153,7 +155,7 @@ impl DebugId {
     }
 
     /// Parses a breakpad identifier from a string.
-    pub fn from_breakpad(string: &str) -> Result<DebugId, ParseDebugIdError> {
+    pub fn from_breakpad(string: &str) -> Result<Self, ParseDebugIdError> {
         // Technically, we are are too permissive here by allowing dashes, but
         // we are complete.
         string.parse()
@@ -170,6 +172,10 @@ impl DebugId {
     /// On all other platforms, this value will always be zero.
     pub fn appendix(&self) -> u32 {
         self.appendix
+    }
+
+    pub fn is_nil(&self) -> bool {
+        self.uuid.is_nil() && self.appendix() == 0
     }
 
     /// Returns a wrapper which when formatted via `fmt::Display` will format a
@@ -296,5 +302,69 @@ impl<'a> fmt::Display for BreakpadFormat<'a> {
             self.inner.uuid().to_simple_ref(),
             self.inner.appendix()
         )
+    }
+}
+
+/// Indicates a parsing error.
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub struct ParseCodeIdError;
+
+#[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub struct CodeId {
+    inner: Vec<u8>,
+}
+
+impl CodeId {
+    pub fn from_vec(vec: Vec<u8>) -> Self {
+        CodeId { inner: vec }
+    }
+
+    pub fn from_slice(slice: &[u8]) -> Self {
+        Self::from_vec(slice.into())
+    }
+
+    pub fn parse_hex(string: &str) -> Result<Self, ParseCodeIdError> {
+        if string.len() % 2 != 0 {
+            return Err(ParseCodeIdError);
+        }
+
+        let vec = string
+            .as_bytes()
+            .chunks(2)
+            .map(|chunk| u8::from_str_radix(unsafe { str::from_utf8_unchecked(chunk) }, 16))
+            .collect::<Result<_, _>>()
+            .map_err(|_| ParseCodeIdError)?;
+
+        Ok(Self::from_vec(vec))
+    }
+
+    pub fn is_nil(&self) -> bool {
+        self.inner.is_empty()
+    }
+}
+
+impl fmt::Display for CodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for byte in &self.inner {
+            write!(f, "{:02x}", byte)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl fmt::Debug for CodeId {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "CodeId(")?;
+        fmt::Display::fmt(self, f)?;
+        write!(f, ")")
+    }
+}
+
+impl str::FromStr for CodeId {
+    type Err = ParseCodeIdError;
+
+    fn from_str(string: &str) -> Result<Self, ParseCodeIdError> {
+        Self::parse_hex(string)
     }
 }

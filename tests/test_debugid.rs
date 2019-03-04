@@ -4,6 +4,11 @@ use debugid::DebugId;
 use uuid::Uuid;
 
 #[test]
+fn test_is_nil() {
+    assert!(DebugId::default().is_nil());
+}
+
+#[test]
 fn test_parse_zero() {
     assert_eq!(
         DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75").unwrap(),

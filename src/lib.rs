@@ -1,56 +1,24 @@
-//! This crate implements a type that is a thin wrapper around uuids that
-//! can hold a "debug id".  This is a concept that originally comes from
-//! breakpad and is also used by Sentry to identify a debug information
-//! file.
+//! This crate provides types for identifiers of object files, such as executables, dynamic
+//! libraries or debug companion files. The concept originates in Google Breakpad and defines two
+//! types:
 //!
-//! The reason this is not just a UUID is that at least on Windows a debug
-//! information file (PDB) is not just associated by using a UUID alone
-//! but it has an appendix (a `u32` age field).
+//!  - [`CodeId`]: Identifies the file containing source code, i.e. the actual library or
+//!    executable. The identifier is platform dependent and implementation defined. Thus, there is
+//!    no canonical representation.
+//!  - [`DebugId`]: Identifies a debug information file, which may or may not use information from
+//!    the Code ID. The contents are also implementation defined, but as opposed to `CodeId`, the
+//!    structure is streamlined across platforms. It is also guaranteed to be 32 bytes in size.
 //!
-//! ## Representation
-//!
-//! The string representation must be between 33 and 40 characters long and
-//! consist of:
-//!
-//! 1. 36 character hyphenated hex representation of the UUID field
-//! 2. 1-16 character lowercase hex representation of the u64 appendix
-//!
-//! ```
-//! # extern crate debugid;
-//! use debugid::DebugId;
-//!
-//! # fn foo() -> Result<(), ::debugid::ParseDebugIdError> {
-//! let id: DebugId = "dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".parse()?;
-//! assert_eq!("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".to_string(), id.to_string());
-//! # Ok(())
-//! # }
-//!
-//! # fn main() { foo().unwrap() }
-//! ```
-//!
-//! ## Breakpad compatibility
-//!
-//! Separately the breakpad format can be generated as well:
-//!
-//! ```
-//! # extern crate debugid;
-//! use debugid::DebugId;
-//!
-//! # fn foo() -> Result<(), ::debugid::ParseDebugIdError> {
-//! let id: DebugId = "dfb8e43a-f242-3d73-a453-aeb6a777ef75-a".parse()?;
-//! assert_eq!(id.breakpad().to_string(), "DFB8E43AF2423D73A453AEB6A777EF75a");
-//! # Ok(())
-//! # }
-//!
-//! # fn main() { foo().unwrap() }
-//! ```
+//! [`CodeId`]: struct.CodeId.html [`DebugId`]: struct.DebugId.html
 
 #![warn(missing_docs)]
 
-use regex::Regex;
 use std::error;
 use std::fmt;
+use std::fmt::Write;
 use std::str;
+
+use regex::Regex;
 use uuid::Uuid;
 
 lazy_static::lazy_static! {
@@ -77,7 +45,7 @@ lazy_static::lazy_static! {
     .unwrap();
 }
 
-/// Indicates a parsing error.
+/// Indicates an error parsing a [`DebugId`](struct.DebugId.html).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseDebugIdError;
 
@@ -102,7 +70,10 @@ impl fmt::Display for ParseDebugIdError {
 /// 1. 36 character hyphenated hex representation of the UUID field
 /// 2. 1-16 character lowercase hex representation of the u64 appendix
 ///
-/// **Example:**
+/// The debug identifier is compatible to Google Breakpad. Use [`DebugId::breakpad`] to get a
+/// breakpad string representation of this debug identifier.
+///
+/// # Example
 ///
 /// ```
 /// # extern crate debugid;
@@ -174,6 +145,7 @@ impl DebugId {
         self.appendix
     }
 
+    /// Returns whether this identifier is nil, i.e. it consists only of zeros.
     pub fn is_nil(&self) -> bool {
         self.uuid.is_nil() && self.appendix() == 0
     }
@@ -305,51 +277,57 @@ impl<'a> fmt::Display for BreakpadFormat<'a> {
     }
 }
 
-/// Indicates a parsing error.
+/// Indicates an error parsing a [`CodeId`](struct.CodeId.html).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseCodeIdError;
 
+/// Unique platform-dependent identifier of code files.
+///
+/// This identifier assumes a string representation that depends on the platform and compiler used.
+/// There are the following known formats:
+///
+///  - **MachO UUID**: The unique identifier of a Mach binary, specified in the `LC_UUID` load
+///    command header.
+///  - **GNU Build ID**: Contents of the `.gnu.build-id` note or section contents formatted as
+///    lowercase hex string.
+///  - **PE Timestamp**: Timestamp and size of image values from a Windows PE header.
+///  - **GO Build ID**: Nested GO build identifiers comprising `actionID/[.../]contentID`.
 #[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CodeId {
-    inner: Vec<u8>,
+    inner: String,
 }
 
 impl CodeId {
-    pub fn from_vec(vec: Vec<u8>) -> Self {
-        CodeId { inner: vec }
+    /// Constructs a `CodeId` from its string representation.
+    pub fn new(string: String) -> Self {
+        CodeId { inner: string }
     }
 
-    pub fn from_slice(slice: &[u8]) -> Self {
-        Self::from_vec(slice.into())
-    }
+    /// Constructs a `CodeId` from a binary slice.
+    pub fn from_binary(slice: &[u8]) -> Self {
+        let mut string = String::with_capacity(slice.len() * 2);
 
-    pub fn parse_hex(string: &str) -> Result<Self, ParseCodeIdError> {
-        if string.len() % 2 != 0 {
-            return Err(ParseCodeIdError);
+        for byte in slice {
+            write!(&mut string, "{:02x}", byte).expect("");
         }
 
-        let vec = string
-            .as_bytes()
-            .chunks(2)
-            .map(|chunk| u8::from_str_radix(unsafe { str::from_utf8_unchecked(chunk) }, 16))
-            .collect::<Result<_, _>>()
-            .map_err(|_| ParseCodeIdError)?;
-
-        Ok(Self::from_vec(vec))
+        Self::new(string)
     }
 
+    /// Returns whether this identifier is nil, i.e. it is empty.
     pub fn is_nil(&self) -> bool {
         self.inner.is_empty()
+    }
+
+    /// Returns the string representation of this code identifier.
+    pub fn as_str(&self) -> &str {
+        self.inner.as_str()
     }
 }
 
 impl fmt::Display for CodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for byte in &self.inner {
-            write!(f, "{:02x}", byte)?;
-        }
-
-        Ok(())
+        f.write_str(&self.inner)
     }
 }
 
@@ -365,6 +343,6 @@ impl str::FromStr for CodeId {
     type Err = ParseCodeIdError;
 
     fn from_str(string: &str) -> Result<Self, ParseCodeIdError> {
-        Self::parse_hex(string)
+        Ok(Self::new(string.into()))
     }
 }

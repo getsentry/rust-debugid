@@ -97,6 +97,11 @@ pub struct DebugId {
 }
 
 impl DebugId {
+    /// Constructs an empty debug identifier, containing only zeros.
+    pub fn nil() -> Self {
+        Self::default()
+    }
+
     /// Constructs a `DebugId` from its `uuid`.
     pub fn from_uuid(uuid: Uuid) -> Self {
         Self::from_parts(uuid, 0)
@@ -262,6 +267,11 @@ pub struct CodeId {
 }
 
 impl CodeId {
+    /// Constructs an empty code identifier.
+    pub fn nil() -> Self {
+        Self::default()
+    }
+
     /// Constructs a `CodeId` from its string representation.
     pub fn new(string: String) -> Self {
         CodeId { inner: string }

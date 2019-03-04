@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0
+
+- Add `CodeId`, an identifier for code files.
+- Add `DebugId::nil` to create an empty id. This is the default.
+- Add `DebugId::is_nil` to check whether a debug ID is empty.
+- **Breaking Change:** The serde feature is now only called `"serde"`.
+
 ## 0.4.0
 
 - **Breaking Change**: Require Rust 1.31.0 (Edition 2018) or newer

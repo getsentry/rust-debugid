@@ -250,6 +250,19 @@ impl<'a> fmt::Display for BreakpadFormat<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseCodeIdError;
 
+impl error::Error for ParseCodeIdError {
+    fn description(&self) -> &str {
+        "invalid code identifier"
+    }
+}
+
+impl fmt::Display for ParseCodeIdError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        use std::error::Error;
+        write!(f, "{}", self.description())
+    }
+}
+
 /// Unique platform-dependent identifier of code files.
 ///
 /// This identifier assumes a string representation that depends on the platform and compiler used.

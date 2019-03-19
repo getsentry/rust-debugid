@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1
+
+- Implement `Display` and `std::error::Error` for `ParseCodeIdError`.
+
 ## 0.5.0
 
 - Add `CodeId`, an identifier for code files.

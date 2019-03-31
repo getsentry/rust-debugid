@@ -68,7 +68,7 @@ impl fmt::Display for ParseDebugIdError {
 /// consist of:
 ///
 /// 1. 36 character hyphenated hex representation of the UUID field
-/// 2. 1-16 character lowercase hex representation of the u64 appendix
+/// 2. 1-16 character lowercase hex representation of the u32 appendix
 ///
 /// The debug identifier is compatible to Google Breakpad. Use [`DebugId::breakpad`] to get a
 /// breakpad string representation of this debug identifier.
@@ -274,9 +274,51 @@ impl fmt::Display for ParseCodeIdError {
 ///    lowercase hex string.
 ///  - **PE Timestamp**: Timestamp and size of image values from a Windows PE header.
 ///  - **GO Build ID**: Nested GO build identifiers comprising `actionID/[.../]contentID`.
+///
+/// One some platforms a `CodeId` is an alias for a `DebugId` but the exact rules
+/// around this are complex.  Because of this the `CodeId` type provides a helper
+/// that effectively parses the `CodeId` as if it was a hexadecimal ID and lets
+/// you access the underlying bytes.  You should only use this method when you are
+/// sure that the ID you're dealing with is compatible.
+///
+/// Because the `CodeId` does not really have a format it also means that the
+/// hex derived bytes representation is largely a guess and is lossy.  For instance
+/// the underlying bytes will not make a difference between the ID `fafa` and `FAFA`.
 #[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CodeId {
     inner: String,
+    bytes: Option<Vec<u8>>,
+}
+
+fn debug_id_as_bytes(id: &str) -> Option<Vec<u8>> {
+    let mut rv = Vec::new();
+
+    let mut half = None;
+    for &c in id.as_bytes().iter() {
+        half = match (c, half) {
+            (b'-', h) => h,
+            (b'0'..=b'9', Some(h)) => {
+                rv.push((h << 4) | (c - b'0'));
+                None
+            }
+            (b'0'..=b'9', None) => Some(c - b'0'),
+            (b'a'..=b'f', Some(h)) => {
+                rv.push((h << 4) | (c - b'a' + 10));
+                None
+            }
+            (b'a'..=b'f', None) => Some(c - b'a' + 10),
+            (b'A'..=b'F', Some(h)) => {
+                rv.push((h << 4) | (c - b'A' + 10));
+                None
+            }
+            (b'A'..=b'F', None) => Some(c - b'A' + 10),
+            _ => {
+                return None;
+            }
+        }
+    }
+
+    Some(rv)
 }
 
 impl CodeId {
@@ -287,7 +329,10 @@ impl CodeId {
 
     /// Constructs a `CodeId` from its string representation.
     pub fn new(string: String) -> Self {
-        CodeId { inner: string }
+        CodeId {
+            bytes: debug_id_as_bytes(&string),
+            inner: string,
+        }
     }
 
     /// Constructs a `CodeId` from a binary slice.
@@ -298,7 +343,10 @@ impl CodeId {
             write!(&mut string, "{:02x}", byte).expect("");
         }
 
-        Self::new(string)
+        CodeId {
+            inner: string,
+            bytes: Some(slice.to_vec()),
+        }
     }
 
     /// Returns whether this identifier is nil, i.e. it is empty.
@@ -309,6 +357,16 @@ impl CodeId {
     /// Returns the string representation of this code identifier.
     pub fn as_str(&self) -> &str {
         self.inner.as_str()
+    }
+
+    /// The bytes if the code id is in a compatible hexadecimal format.
+    pub fn as_bytes(&self) -> Option<&[u8]> {
+        self.bytes.as_ref().map(|bytes| &bytes[..])
+    }
+
+    /// If this `DebugId` holds a UUID, return it.
+    pub fn uuid(&self) -> Option<Uuid> {
+        self.as_bytes().and_then(|b| Uuid::from_slice(b).ok())
     }
 }
 

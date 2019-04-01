@@ -30,7 +30,7 @@ fn test_serialize_debugid() {
 #[test]
 fn test_deserialize_codeid() {
     assert_eq!(
-        CodeId::new("dfb8e43af2423d73a453aeb6a777ef75".into()),
+        CodeId::parse_hex("dfb8e43af2423d73a453aeb6a777ef75").unwrap(),
         serde_json::from_str("\"dfb8e43af2423d73a453aeb6a777ef75\"").unwrap(),
     );
 }
@@ -39,6 +39,7 @@ fn test_deserialize_codeid() {
 fn test_serialize_codeid() {
     assert_eq!(
         "\"dfb8e43af2423d73a453aeb6a777ef75\"",
-        serde_json::to_string(&CodeId::new("dfb8e43af2423d73a453aeb6a777ef75".into())).unwrap(),
+        serde_json::to_string(&CodeId::parse_hex("dfb8e43af2423d73a453aeb6a777ef75").unwrap())
+            .unwrap(),
     );
 }

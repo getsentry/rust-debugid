@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.6.0
+
+- Change `CodeId` to be a binary buffer instead of formatted string.
+
 ## 0.5.1
 
 - Implement `Display` and `std::error::Error` for `ParseCodeIdError`.

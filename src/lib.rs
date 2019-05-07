@@ -15,6 +15,7 @@
 
 use std::error;
 use std::fmt;
+use std::fmt::Write;
 use std::str;
 
 use regex::Regex;
@@ -280,7 +281,7 @@ impl fmt::Display for ParseCodeIdError {
 ///  - **GO Build ID**: Nested GO build identifiers comprising `actionID/[.../]contentID`.
 #[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CodeId {
-    inner: Vec<u8>,
+    inner: String,
 }
 
 impl CodeId {
@@ -289,30 +290,21 @@ impl CodeId {
         Self::default()
     }
 
-    /// Constructs a `CodeId` from a binary buffer.
-    pub fn from_vec(vec: Vec<u8>) -> Self {
-        CodeId { inner: vec }
+    /// Constructs a `CodeId` from its string representation.
+    pub fn new(mut string: String) -> Self {
+        string.make_ascii_lowercase();
+        CodeId { inner: string }
     }
 
     /// Constructs a `CodeId` from a binary slice.
-    pub fn from_slice(slice: &[u8]) -> Self {
-        Self::from_vec(slice.into())
-    }
+    pub fn from_binary(slice: &[u8]) -> Self {
+        let mut string = String::with_capacity(slice.len() * 2);
 
-    /// Parses a `CodeId` from a hexadecimal string.
-    pub fn parse_hex(string: &str) -> Result<Self, ParseCodeIdError> {
-        if string.len() % 2 != 0 {
-            return Err(ParseCodeIdError);
+        for byte in slice {
+            write!(&mut string, "{:02x}", byte).expect("");
         }
 
-        let vec = string
-            .as_bytes()
-            .chunks(2)
-            .map(|chunk| u8::from_str_radix(unsafe { str::from_utf8_unchecked(chunk) }, 16))
-            .collect::<Result<_, _>>()
-            .map_err(|_| ParseCodeIdError)?;
-
-        Ok(Self::from_vec(vec))
+        Self::new(string)
     }
 
     /// Returns whether this identifier is nil, i.e. it is empty.
@@ -320,24 +312,15 @@ impl CodeId {
         self.inner.is_empty()
     }
 
-    /// Returns the binary representation of this code identifier.
-    pub fn as_slice(&self) -> &[u8] {
-        &self.inner
-    }
-
-    /// If this `DebugId` holds a UUID, return it.
-    pub fn uuid(&self) -> Option<Uuid> {
-        Uuid::from_slice(&self.inner).ok()
+    /// Returns the string representation of this code identifier.
+    pub fn as_str(&self) -> &str {
+        self.inner.as_str()
     }
 }
 
 impl fmt::Display for CodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        for byte in &self.inner {
-            write!(f, "{:02x}", byte)?;
-        }
-
-        Ok(())
+        f.write_str(&self.inner)
     }
 }
 
@@ -347,23 +330,23 @@ impl fmt::Debug for CodeId {
     }
 }
 
+impl From<String> for CodeId {
+    fn from(string: String) -> Self {
+        Self::new(string)
+    }
+}
+
+impl From<&'_ str> for CodeId {
+    fn from(string: &str) -> Self {
+        Self::new(string.into())
+    }
+}
+
 impl str::FromStr for CodeId {
     type Err = ParseCodeIdError;
 
     fn from_str(string: &str) -> Result<Self, ParseCodeIdError> {
-        Self::parse_hex(string)
-    }
-}
-
-impl From<Vec<u8>> for CodeId {
-    fn from(vec: Vec<u8>) -> Self {
-        CodeId::from_vec(vec)
-    }
-}
-
-impl From<&'_ [u8]> for CodeId {
-    fn from(slice: &[u8]) -> Self {
-        CodeId::from_slice(slice)
+        Ok(Self::new(string.into()))
     }
 }
 
@@ -376,15 +359,14 @@ mod serde_support {
 
     impl Serialize for CodeId {
         fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
-            serializer.serialize_str(&self.to_string())
+            serializer.serialize_str(self.as_str())
         }
     }
 
     impl<'de> Deserialize<'de> for CodeId {
         fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
             let string = String::deserialize(deserializer)?;
-            CodeId::parse_hex(&string)
-                .map_err(|_| de::Error::invalid_value(Unexpected::Str(&string), &"CodeId"))
+            Ok(CodeId::new(string))
         }
     }
 

@@ -1,6 +1,11 @@
 # Changelog
 
-## 0.6.0
+## 0.5.2
+
+- Implement conversion traits for `CodeId`.
+- Always coerce code identifiers to lower case.
+
+## 0.6.0 (yanked)
 
 - Change `CodeId` to be a binary buffer instead of formatted string.
 

@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.3
+
+- Only allow ASCII hex charactes in code identifiers.
+- Implement `AsRef<str>` for `CodeId`.
+
 ## 0.5.2
 
 - Implement conversion traits for `CodeId`.

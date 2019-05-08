@@ -271,14 +271,16 @@ impl fmt::Display for ParseCodeIdError {
 /// Unique platform-dependent identifier of code files.
 ///
 /// This identifier assumes a string representation that depends on the platform and compiler used.
+/// The representation only retains hex characters and canonically stores lower case.
+///
 /// There are the following known formats:
 ///
 ///  - **MachO UUID**: The unique identifier of a Mach binary, specified in the `LC_UUID` load
 ///    command header.
 ///  - **GNU Build ID**: Contents of the `.gnu.build-id` note or section contents formatted as
 ///    lowercase hex string.
-///  - **PE Timestamp**: Timestamp and size of image values from a Windows PE header.
-///  - **GO Build ID**: Nested GO build identifiers comprising `actionID/[.../]contentID`.
+///  - **PE Timestamp**: Timestamp and size of image values from a Windows PE header. The size of
+///    image value is truncated, so the length of the `CodeId` might not be a multiple of 2.
 #[derive(Clone, Default, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub struct CodeId {
     inner: String,
@@ -292,6 +294,7 @@ impl CodeId {
 
     /// Constructs a `CodeId` from its string representation.
     pub fn new(mut string: String) -> Self {
+        string.retain(|c| c.is_ascii_hexdigit());
         string.make_ascii_lowercase();
         CodeId { inner: string }
     }

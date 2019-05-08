@@ -345,6 +345,12 @@ impl From<&'_ str> for CodeId {
     }
 }
 
+impl AsRef<str> for CodeId {
+    fn as_ref(&self) -> &str {
+        self.as_str()
+    }
+}
+
 impl str::FromStr for CodeId {
     type Err = ParseCodeIdError;
 

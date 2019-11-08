@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.7.0
+
+- Update `uuid` to `0.8.1`.
+
+## 0.6.0
+
+_yanked_
+
 ## 0.5.3
 
 - Only allow ASCII hex charactes in code identifiers.

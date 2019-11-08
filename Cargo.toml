@@ -1,6 +1,6 @@
 [package]
 name = "debugid"
-version = "0.5.3"
+version = "0.7.0"
 license = "Apache-2.0"
 description = "Common reusable types for implementing the sentry.io protocol."
 homepage = "https://sentry.io/"
@@ -12,7 +12,7 @@ authors = ["Sentry <hello@sentry.io>"]
 edition = "2018"
 
 [dependencies]
-uuid = "0.7.1"
+uuid = "0.8.1"
 regex = "1.1.0"
 lazy_static = "1.2.0"
 serde = { version = "1.0.85", optional = true }

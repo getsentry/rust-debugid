@@ -11,7 +11,7 @@ script: make $SUITE
 
 matrix:
   include:
-    - env: SUITE=format-check
+    - env: SUITE=style
     - env: SUITE=lint
     - env: SUITE=test
     - env: SUITE=test

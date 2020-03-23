@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.1
+
+- Remove implementation for deprecated `Error::description` on error types.
+
 ## 0.7.0
 
 - Update `uuid` to `0.8.1`.

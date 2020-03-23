@@ -49,16 +49,11 @@ lazy_static::lazy_static! {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseDebugIdError;
 
-impl error::Error for ParseDebugIdError {
-    fn description(&self) -> &str {
-        "invalid debug identifier"
-    }
-}
+impl error::Error for ParseDebugIdError {}
 
 impl fmt::Display for ParseDebugIdError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use std::error::Error;
-        write!(f, "{}", self.description())
+        write!(f, "invalid debug identifier")
     }
 }
 
@@ -255,16 +250,11 @@ impl<'a> fmt::Display for BreakpadFormat<'a> {
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub struct ParseCodeIdError;
 
-impl error::Error for ParseCodeIdError {
-    fn description(&self) -> &str {
-        "invalid code identifier"
-    }
-}
+impl error::Error for ParseCodeIdError {}
 
 impl fmt::Display for ParseCodeIdError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use std::error::Error;
-        write!(f, "{}", self.description())
+        write!(f, "invalid code identifier")
     }
 }
 

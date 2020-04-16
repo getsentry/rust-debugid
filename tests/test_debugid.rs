@@ -118,6 +118,11 @@ fn test_parse_error_trailing_dash() {
 }
 
 #[test]
+fn test_parse_error_unicode() {
+    assert!(DebugId::from_str("아이쿱 조합원 앱카드").is_err());
+}
+
+#[test]
 fn test_from_guid_age() {
     let guid = [
         0x98, 0xd1, 0xef, 0xe8, 0x6e, 0xf8, 0xfe, 0x45, 0x9d, 0xdb, 0xe1, 0x13, 0x82, 0xb5, 0xd1,
@@ -164,13 +169,23 @@ fn test_parse_breakpad_long() {
 }
 
 #[test]
-fn test_parse_breakpad_with_tail() {
+fn test_parse_breakpad_error_tail() {
     assert!(DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75feedface123").is_err());
 }
 
 #[test]
-fn test_parse_breakpad_missing_age() {
+fn test_parse_breakpad_error_missing_age() {
     assert!(DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF75").is_err());
+}
+
+#[test]
+fn test_parse_breakpad_error_short() {
+    assert!(DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF7").is_err());
+}
+
+#[test]
+fn test_parse_breakpad_error_dashes() {
+    assert!(DebugId::from_breakpad("e8efd198-f86e-45fe-9ddb-e11382b5d1c9-1").is_err());
 }
 
 #[test]
@@ -210,11 +225,6 @@ fn test_to_string_breakpad_long() {
         id.breakpad().to_string(),
         "DFB8E43AF2423D73A453AEB6A777EF75feedface"
     );
-}
-
-#[test]
-fn test_parse_breakpad_error_short() {
-    assert!(DebugId::from_breakpad("DFB8E43AF2423D73A453AEB6A777EF7").is_err());
 }
 
 #[test]

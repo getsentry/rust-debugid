@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.7.2
+
+- Implement stricter and more consistent validation in `FromStr for DebugId`.
+- `DebugId::from_breakpad` now properly validates the identifier.
+- Remove internal dependencies on `regex` and `lazy_static`.
+
 ## 0.7.1
 
 - Remove deprecated implementation of `Error::description` on errors.

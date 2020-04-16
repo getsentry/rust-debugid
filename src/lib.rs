@@ -18,32 +18,7 @@ use std::fmt;
 use std::fmt::Write;
 use std::str;
 
-use regex::Regex;
 use uuid::Uuid;
-
-lazy_static::lazy_static! {
-    static ref DEBUG_ID_RE: Regex = Regex::new(
-        r"(?ix)
-        ^
-            (?P<uuid>
-                [0-9a-f]{8}-?
-                [0-9a-f]{4}-?
-                [0-9a-f]{4}-?
-                [0-9a-f]{4}-?
-                [0-9a-f]{12}
-            )
-            -?
-            (?P<appendix>
-                [0-9a-f]{1,8}
-            )?
-            ( # ignored tail
-                (?:-?[0-9a-f]){1,24}
-            )?
-        $
-    "
-    )
-    .unwrap();
-}
 
 /// Indicates an error parsing a [`DebugId`](struct.DebugId.html).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -55,6 +30,13 @@ impl fmt::Display for ParseDebugIdError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "invalid debug identifier")
     }
+}
+
+#[derive(Clone, Copy, Debug)]
+struct ParseOptions {
+    allow_hyphens: bool,
+    require_appendix: bool,
+    allow_tail: bool,
 }
 
 /// Unique identifier for debug information files and their debug information.
@@ -132,9 +114,12 @@ impl DebugId {
 
     /// Parses a breakpad identifier from a string.
     pub fn from_breakpad(string: &str) -> Result<Self, ParseDebugIdError> {
-        // Technically, we are are too permissive here by allowing dashes, but
-        // we are complete.
-        string.parse()
+        let options = ParseOptions {
+            allow_hyphens: false,
+            require_appendix: true,
+            allow_tail: false,
+        };
+        Self::parse_str(string, options).ok_or(ParseDebugIdError)
     }
 
     /// Returns the UUID part of the code module's debug_identifier.
@@ -160,6 +145,34 @@ impl DebugId {
     pub fn breakpad(&self) -> BreakpadFormat<'_> {
         BreakpadFormat { inner: self }
     }
+
+    fn parse_str(string: &str, options: ParseOptions) -> Option<Self> {
+        let is_hyphenated = string.get(8..9) == Some("-");
+        if is_hyphenated && !options.allow_hyphens || !string.is_ascii() {
+            return None;
+        }
+
+        let uuid_len = if is_hyphenated { 36 } else { 32 };
+        let uuid = string.get(..uuid_len)?.parse().ok()?;
+        if !options.require_appendix && string.len() == uuid_len {
+            return Some(Self::from_parts(uuid, 0));
+        }
+
+        let mut appendix_str = &string[uuid_len..];
+        if is_hyphenated ^ appendix_str.starts_with('-') {
+            return None; // Require a hyphen if and only if we're hyphenated.
+        } else if is_hyphenated {
+            appendix_str = &appendix_str[1..]; // Skip the hyphen for parsing.
+        }
+
+        if options.allow_tail && appendix_str.len() > 8 {
+            appendix_str = &appendix_str[..8];
+        }
+
+        // Parse the appendix, which fails on empty strings.
+        let appendix = u32::from_str_radix(appendix_str, 16).ok()?;
+        Some(Self::from_parts(uuid, appendix))
+    }
 }
 
 impl fmt::Debug for DebugId {
@@ -184,30 +197,24 @@ impl fmt::Display for DebugId {
 impl str::FromStr for DebugId {
     type Err = ParseDebugIdError;
 
-    fn from_str(string: &str) -> Result<DebugId, ParseDebugIdError> {
-        let captures = DEBUG_ID_RE.captures(string).ok_or(ParseDebugIdError)?;
-        let uuid = captures
-            .name("uuid")
-            .unwrap()
-            .as_str()
-            .parse()
-            .map_err(|_| ParseDebugIdError)?;
-        let appendix = captures
-            .name("appendix")
-            .map_or(Ok(0), |s| u32::from_str_radix(s.as_str(), 16))
-            .map_err(|_| ParseDebugIdError)?;
-        Ok(DebugId::from_parts(uuid, appendix))
+    fn from_str(string: &str) -> Result<Self, ParseDebugIdError> {
+        let options = ParseOptions {
+            allow_hyphens: true,
+            require_appendix: false,
+            allow_tail: true,
+        };
+        Self::parse_str(string, options).ok_or(ParseDebugIdError)
     }
 }
 
 impl From<Uuid> for DebugId {
-    fn from(uuid: Uuid) -> DebugId {
+    fn from(uuid: Uuid) -> Self {
         DebugId::from_uuid(uuid)
     }
 }
 
 impl From<(Uuid, u32)> for DebugId {
-    fn from(tuple: (Uuid, u32)) -> DebugId {
+    fn from(tuple: (Uuid, u32)) -> Self {
         let (uuid, appendix) = tuple;
         DebugId::from_parts(uuid, appendix)
     }

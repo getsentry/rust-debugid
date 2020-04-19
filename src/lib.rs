@@ -404,3 +404,32 @@ mod serde_support {
         }
     }
 }
+
+#[cfg(feature = "schemars")]
+mod schemars_support {
+    use schemars::gen::SchemaGenerator;
+    use schemars::schema::Schema;
+    use schemars::JsonSchema;
+
+    use super::*;
+
+    impl JsonSchema for CodeId {
+        fn schema_name() -> String {
+            "CodeId".to_string()
+        }
+
+        fn json_schema(gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(gen)
+        }
+    }
+
+    impl JsonSchema for DebugId {
+        fn schema_name() -> String {
+            "DebugId".to_string()
+        }
+
+        fn json_schema(gen: &mut SchemaGenerator) -> Schema {
+            String::json_schema(gen)
+        }
+    }
+}

@@ -9,7 +9,8 @@
 //!    the Code ID. The contents are also implementation defined, but as opposed to `CodeId`, the
 //!    structure is streamlined across platforms. It is also guaranteed to be 32 bytes in size.
 //!
-//! [`CodeId`]: struct.CodeId.html [`DebugId`]: struct.DebugId.html
+//! [`CodeId`]: struct.CodeId.html
+//! [`DebugId`]: struct.DebugId.html
 
 #![warn(missing_docs)]
 
@@ -41,13 +42,12 @@ struct ParseOptions {
 
 /// Unique identifier for debug information files and their debug information.
 ///
-/// This type is analogous to `CodeId`, except that it identifies a debug file instead of the actual
-/// library or executable. One some platforms, a `DebugId` is an alias for a `CodeId` but the exact
-/// rules around this are complex. On Windows, the identifiers are completely different and refer to
-/// separate files.
+/// This type is analogous to [`CodeId`], except that it identifies a debug file instead of the
+/// actual library or executable. One some platforms, a `DebugId` is an alias for a `CodeId` but the
+/// exact rules around this are complex. On Windows, the identifiers are completely different and
+/// refer to separate files.
 ///
-/// The string representation must be between 33 and 40 characters
-/// long and consist of:
+/// The string representation must be between 33 and 40 characters long and consist of:
 ///
 /// 1. 36 character hyphenated hex representation of the UUID field
 /// 2. 1-16 character lowercase hex representation of the u32 appendix
@@ -70,6 +70,9 @@ struct ParseOptions {
 ///
 /// # fn main() { foo().unwrap() }
 /// ```
+///
+/// [`CodeId`]: struct.CodeId.html
+/// [`DebugId::breakpad`]: struct.DebugId.html#method.breakpad
 #[repr(C, packed)]
 #[derive(Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy)]
 pub struct DebugId {
@@ -220,7 +223,7 @@ impl From<(Uuid, u32)> for DebugId {
     }
 }
 
-/// Wrapper around `DebugId` for Breakpad formatting.
+/// Wrapper around [`DebugId`] for Breakpad formatting.
 ///
 /// **Example:**
 ///
@@ -237,6 +240,8 @@ impl From<(Uuid, u32)> for DebugId {
 ///
 /// # fn main() { foo().unwrap() }
 /// ```
+///
+/// [`DebugId`]: struct.DebugId.html
 #[derive(Debug)]
 pub struct BreakpadFormat<'a> {
     inner: &'a DebugId,

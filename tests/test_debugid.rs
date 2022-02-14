@@ -268,3 +268,41 @@ fn test_serde_deserialize() {
         )
     );
 }
+
+#[test]
+fn test_pdb20() {
+    let timestamp: u32 = 0x418e89c3;
+    let age: u32 = 1;
+    let debug_id = DebugId::from_timestamp_age(timestamp, age);
+
+    assert!(debug_id.is_pdb20());
+    assert_eq!(debug_id.uuid(), Uuid::nil());
+}
+
+#[test]
+fn test_pdb20_format() {
+    let timestamp: u32 = 0x418e89c3;
+    let age: u32 = 1;
+    let debug_id = DebugId::from_timestamp_age(timestamp, age);
+
+    assert_eq!(debug_id.to_string(), "418E89C3-1".to_string());
+    assert_eq!(debug_id.breakpad().to_string(), "418E89C31");
+}
+
+#[test]
+fn test_pdb20_parse() {
+    let timestamp: u32 = 0x418e89c3;
+    let age: u32 = 1;
+    let debug_id = DebugId::from_timestamp_age(timestamp, age);
+
+    let s = "418E89C3-1";
+    let parsed = DebugId::from_str(s).unwrap();
+    assert_eq!(parsed, debug_id);
+
+    let s = "418E89C31";
+    let parsed = DebugId::from_breakpad(s).unwrap();
+    assert_eq!(parsed, debug_id);
+
+    let s = "418E89C3-1";
+    assert!(DebugId::from_breakpad(s).is_err());
+}

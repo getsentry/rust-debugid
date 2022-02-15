@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7.3
+
+- Bump Minimal Stable Rust Version to 1.36 due to dependencies.
+
 ## 0.7.2
 
 - Implement stricter and more consistent validation in `FromStr for DebugId`.

@@ -2,7 +2,7 @@
 
 ## 0.7.3
 
-- Bump Minimal Stable Rust Version to 1.36 due to dependencies.
+- Bump Minimal Supported Rust Version to 1.36 due to dependencies.
 
 ## 0.7.2
 

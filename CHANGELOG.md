@@ -3,6 +3,7 @@
 ## 0.7.3
 
 - Bump Minimal Supported Rust Version to 1.36 due to dependencies.
+- Add support for PDB 2.0 format.
 
 ## 0.7.2
 

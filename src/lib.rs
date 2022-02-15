@@ -252,9 +252,9 @@ impl DebugId {
         }
 
         // Can the PDB 2.0 format match?  This can never be true for a valid UUID.
-        if (is_hyphenated && string.len() >= 10 && string.len() <= 17)
-            || (!is_hyphenated && string.len() >= 9 && string.len() <= 16)
-        {
+        let min_len = if is_hyphenated { 10 } else { 9 };
+        let max_len = if is_hyphenated { 17 } else { 16 };
+        if min_len <= string.len() && string.len() <= max_len {
             let timestamp_str = string.get(..8)?;
             let timestamp = u32::from_str_radix(timestamp_str, 16).ok()?;
             let appendix_str = match is_hyphenated {
@@ -266,7 +266,6 @@ impl DebugId {
         }
 
         let uuid_len = if is_hyphenated { 36 } else { 32 };
-
         let uuid = string.get(..uuid_len)?.parse().ok()?;
         if !options.require_appendix && string.len() == uuid_len {
             return Some(Self::from_parts(uuid, 0));

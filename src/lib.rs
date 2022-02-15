@@ -236,7 +236,7 @@ impl DebugId {
 
     /// Returns whether this identifier is from the PDB 2.0 format.
     pub fn is_pdb20(&self) -> bool {
-        matches!(self.typ, 1)
+        self.typ == 1
     }
 
     /// Returns a wrapper which when formatted via `fmt::Display` will format a

@@ -210,8 +210,8 @@ impl DebugId {
     ///
     /// If this is a debug identifier for the PDB 2.0 format an invalid UUID is returned
     /// where only the first 4 bytes are filled in and the remainder of the bytes are 0.
-    /// This means the UUID has variant [`uuid::Variant::NCS`] and an unknown variant,
-    /// [`Uuid::get_variant`] will return `None`, which is not a valid UUID.
+    /// This means the UUID has variant [`uuid::Variant::NCS`] and an unknown version,
+    /// [`Uuid::get_version`] will return `None`, which is not a valid UUID.
     ///
     /// This may seem odd however does seem reasonable:
     ///

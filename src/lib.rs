@@ -232,8 +232,7 @@ impl DebugId {
 
     /// Returns whether this identifier is nil, i.e. it consists only of zeros.
     pub fn is_nil(&self) -> bool {
-        let uuid = Uuid::from_bytes(self.bytes);
-        uuid.is_nil() && self.appendix == 0
+        self.bytes.iter().all(|&b| b == 0) && self.appendix == 0
     }
 
     /// Returns whether this identifier is from the PDB 2.0 format.

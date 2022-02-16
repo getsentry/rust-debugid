@@ -128,8 +128,8 @@ struct ParseOptions {
 pub struct DebugId {
     bytes: Bytes,
     appendix: u32,
-    typ: u8,
     _padding: [u8; 11],
+    typ: u8,
 }
 
 impl DebugId {
@@ -168,7 +168,7 @@ impl DebugId {
     }
 
     /// Constructs a `DebugId` from a PDB 2.0 timestamp and age.
-    pub fn from_timestamp_age(timestamp: u32, age: u32) -> Self {
+    pub fn from_pdb20(timestamp: u32, age: u32) -> Self {
         // The big-endian byte-order here has to match the one used to read this number in
         // the DebugId::timestamp method.
         DebugId {
@@ -191,8 +191,8 @@ impl DebugId {
                 0u8,
             ],
             appendix: age,
-            typ: 1u8,
             _padding: [0u8; 11],
+            typ: 1u8,
         }
     }
 
@@ -232,7 +232,7 @@ impl DebugId {
 
     /// Returns whether this identifier is nil, i.e. it consists only of zeros.
     pub fn is_nil(&self) -> bool {
-        self.bytes.iter().all(|&b| b == 0) && self.appendix == 0
+        self.bytes == [0u8; 16] && self.appendix == 0
     }
 
     /// Returns whether this identifier is from the PDB 2.0 format.
@@ -263,7 +263,7 @@ impl DebugId {
                 false => string.get(8..)?,
             };
             let appendix = u32::from_str_radix(appendix_str, 16).ok()?;
-            return Some(Self::from_timestamp_age(timestamp, appendix));
+            return Some(Self::from_pdb20(timestamp, appendix));
         }
 
         let uuid_len = if is_hyphenated { 36 } else { 32 };

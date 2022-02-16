@@ -304,6 +304,10 @@ fn test_pdb20_parse() {
     assert_eq!(parsed, debug_id);
 
     let s = "418E89C31";
+    let parsed = DebugId::from_str(s).unwrap();
+    assert_eq!(parsed, debug_id);
+
+    let s = "418E89C31";
     let parsed = DebugId::from_breakpad(s).unwrap();
     assert_eq!(parsed, debug_id);
 

@@ -169,6 +169,8 @@ impl DebugId {
 
     /// Constructs a `DebugId` from a PDB 2.0 timestamp and age.
     pub fn from_timestamp_age(timestamp: u32, age: u32) -> Self {
+        // The big-endian byte-order here has to match the one used to read this number in
+        // the DebugId::timestamp method.
         DebugId {
             bytes: [
                 (timestamp >> 24) as u8,

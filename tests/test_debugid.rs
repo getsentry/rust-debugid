@@ -1,3 +1,4 @@
+use std::mem::{align_of, size_of};
 use std::str::FromStr;
 
 use debugid::DebugId;
@@ -267,4 +268,121 @@ fn test_serde_deserialize() {
             10,
         )
     );
+}
+
+#[test]
+fn test_pdb20() {
+    let timestamp: u32 = 0x418e89c3;
+    let age: u32 = 1;
+    let debug_id = DebugId::from_timestamp_age(timestamp, age);
+
+    assert!(debug_id.is_pdb20());
+    assert_eq!(
+        debug_id.uuid(),
+        Uuid::parse_str("418e89c3-0000-0000-0000-000000000000").unwrap()
+    );
+}
+
+#[test]
+fn test_pdb20_format() {
+    let timestamp: u32 = 0x418e89c3;
+    let age: u32 = 1;
+    let debug_id = DebugId::from_timestamp_age(timestamp, age);
+
+    assert_eq!(debug_id.to_string(), "418E89C3-1".to_string());
+    assert_eq!(debug_id.breakpad().to_string(), "418E89C31");
+}
+
+#[test]
+fn test_pdb20_parse() {
+    let timestamp: u32 = 0x418e89c3;
+    let age: u32 = 1;
+    let debug_id = DebugId::from_timestamp_age(timestamp, age);
+
+    let s = "418E89C3-1";
+    let parsed = DebugId::from_str(s).unwrap();
+    assert_eq!(parsed, debug_id);
+
+    let s = "418E89C31";
+    let parsed = DebugId::from_str(s).unwrap();
+    assert_eq!(parsed, debug_id);
+
+    let s = "418E89C31";
+    let parsed = DebugId::from_breakpad(s).unwrap();
+    assert_eq!(parsed, debug_id);
+
+    let s = "418E89C3-1";
+    assert!(DebugId::from_breakpad(s).is_err());
+}
+
+/// The version of `DebugId` up to 0.7.2.
+#[repr(C, packed)]
+struct OldDebugId {
+    uuid: Uuid,
+    appendix: u32,
+    _padding: [u8; 12],
+}
+
+#[test]
+fn test_mem() {
+    // The size of this struct needs to be exactly aligned and can not change for backwards
+    // compatibility.
+    assert_eq!(size_of::<OldDebugId>(), 32);
+    assert_eq!(size_of::<OldDebugId>(), size_of::<DebugId>());
+    assert_eq!(align_of::<DebugId>(), 1);
+}
+
+#[test]
+fn test_to_from_raw() {
+    let debug_id = DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a").unwrap();
+
+    // Create &[u8] from DebugId.
+    let slice = &[debug_id];
+    let ptr = slice.as_ptr() as *const u8;
+    let len = std::mem::size_of_val(slice);
+    let buf: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
+
+    // Copy bytes to new location.
+    let mut new_buf: Vec<u8> = Vec::new();
+    std::io::copy(&mut std::io::Cursor::new(buf), &mut new_buf).unwrap();
+
+    // Create DebugId from &[u8].
+    let ptr = new_buf.as_ptr() as *const DebugId;
+    let new_debug_id = unsafe { &*ptr };
+
+    assert_eq!(*new_debug_id, debug_id);
+}
+
+#[test]
+fn test_from_old_raw() {
+    // Ensures we can still read previous in-memory representations into the new format.
+    let debug_id = DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a").unwrap();
+    let old_debug_id = OldDebugId {
+        uuid: debug_id.uuid(),
+        appendix: debug_id.appendix(),
+        _padding: [0; 12],
+    };
+
+    // Create &[u8] from OldDebugId.
+    let slice = &[old_debug_id];
+    let ptr = slice.as_ptr() as *const u8;
+    let len = std::mem::size_of_val(slice);
+    let buf: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
+
+    // Copy bytes to new location.
+    let mut new_buf: Vec<u8> = Vec::new();
+    std::io::copy(&mut std::io::Cursor::new(buf), &mut new_buf).unwrap();
+
+    // Create DebugId from &[u8].
+    let ptr = new_buf.as_ptr() as *const DebugId;
+    let new_debug_id = unsafe { &*ptr };
+
+    assert_eq!(*new_debug_id, debug_id);
+}
+
+#[test]
+fn test_default() {
+    let debug_id = DebugId::default();
+    assert_eq!(debug_id.uuid(), Uuid::nil());
+    assert_eq!(debug_id.appendix(), 0);
 }

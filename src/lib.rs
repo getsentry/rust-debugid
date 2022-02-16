@@ -19,7 +19,7 @@ use std::fmt;
 use std::fmt::Write;
 use std::str;
 
-use uuid::Uuid;
+use uuid::{Bytes, Uuid};
 
 /// Indicates an error parsing a [`DebugId`](struct.DebugId.html).
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
@@ -55,6 +55,10 @@ struct ParseOptions {
 /// The debug identifier is compatible to Google Breakpad. Use [`DebugId::breakpad`] to get a
 /// breakpad string representation of this debug identifier.
 ///
+/// There is one exception to this: for the old PDB 2.0 format the debug identifier consists
+/// of only a 32-bit integer + age resulting in a string representation of between 9 and 16
+/// hex characters.
+///
 /// # Example
 ///
 /// ```
@@ -71,14 +75,61 @@ struct ParseOptions {
 /// # fn main() { foo().unwrap() }
 /// ```
 ///
+/// # In-memory representation
+///
+/// The in-memory representation takes up 32 bytes and can be directly written to storage
+/// and mapped back into an object reference.
+///
+/// ```
+/// use std::str::FromStr;
+/// use debugid::DebugId;
+///
+/// let debug_id = DebugId::from_str("dfb8e43a-f242-3d73-a453-aeb6a777ef75-a").unwrap();
+///
+/// let slice = &[debug_id];
+/// let ptr = slice.as_ptr() as *const u8;
+/// let len = std::mem::size_of_val(slice);
+/// let buf: &[u8] = unsafe { std::slice::from_raw_parts(ptr, len) };
+///
+/// let mut new_buf: Vec<u8> = Vec::new();
+/// std::io::copy(&mut std::io::Cursor::new(buf), &mut new_buf).unwrap();
+///
+/// let ptr = new_buf.as_ptr() as *const DebugId;
+/// let new_debug_id = unsafe { &*ptr };
+///
+/// assert_eq!(*new_debug_id, debug_id);
+/// ```
+///
+/// As long the bytes were written using the same major version of this crate you will be
+/// able to read it again like this.
+///
 /// [`CodeId`]: struct.CodeId.html
 /// [`DebugId::breakpad`]: struct.DebugId.html#method.breakpad
+// This needs to be backwards compatible also in its exact in-memory byte-layout since this
+// struct is directly mapped from disk in e.g. Symbolic SymCache formats.  The first version
+// of this struct was defined as:
+//
+// ```rust
+// struct DebugId {
+//     uuid: Uuid,
+//     appendix: u32,
+//     _padding: [u8; 12],
+// }
+// ```
+//
+// For this reason the current `typ` byte represents the type of `DebugId` stored in the
+// `Bytes`:
+//
+// - `0u8`: The `bytes` field contains a UUID.
+// - `1u8`: The first 4 bytes of the `bytes` field contain a big-endian u32, the remaining
+//   bytes are 0.
 #[repr(C, packed)]
 #[derive(Default, Eq, PartialEq, Ord, PartialOrd, Hash, Clone, Copy)]
 pub struct DebugId {
-    uuid: Uuid,
+    bytes: Bytes,
     appendix: u32,
-    _padding: [u8; 12],
+    typ: u8,
+    _padding: [u8; 11],
 }
 
 impl DebugId {
@@ -95,9 +146,10 @@ impl DebugId {
     /// Constructs a `DebugId` from its `uuid` and `appendix` parts.
     pub fn from_parts(uuid: Uuid, appendix: u32) -> Self {
         DebugId {
-            uuid,
+            bytes: *uuid.as_bytes(),
             appendix,
-            _padding: [0; 12],
+            typ: 0,
+            _padding: [0; 11],
         }
     }
 
@@ -115,6 +167,35 @@ impl DebugId {
         Ok(DebugId::from_parts(uuid, age))
     }
 
+    /// Constructs a `DebugId` from a PDB 2.0 timestamp and age.
+    pub fn from_timestamp_age(timestamp: u32, age: u32) -> Self {
+        // The big-endian byte-order here has to match the one used to read this number in
+        // the DebugId::timestamp method.
+        DebugId {
+            bytes: [
+                (timestamp >> 24) as u8,
+                (timestamp >> 16) as u8,
+                (timestamp >> 8) as u8,
+                timestamp as u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+                0u8,
+            ],
+            appendix: age,
+            typ: 1u8,
+            _padding: [0u8; 11],
+        }
+    }
+
     /// Parses a breakpad identifier from a string.
     pub fn from_breakpad(string: &str) -> Result<Self, ParseDebugIdError> {
         let options = ParseOptions {
@@ -126,8 +207,19 @@ impl DebugId {
     }
 
     /// Returns the UUID part of the code module's debug_identifier.
+    ///
+    /// If this is a debug identifier for the PDB 2.0 format an invalid UUID is returned
+    /// where only the first 4 bytes are filled in and the remainder of the bytes are 0.
+    /// This means the UUID has variant [`uuid::Variant::NCS`] and an unknown version,
+    /// [`Uuid::get_version`] will return `None`, which is not a valid UUID.
+    ///
+    /// This may seem odd however does seem reasonable:
+    ///
+    /// - Every [`DebugId`] can be represented as [`Uuid`] and will still mostly look
+    ///   reasonable e.g. in comparisons etc.
+    /// - The PDB 2.0 format is very old and very unlikely to appear practically.
     pub fn uuid(&self) -> Uuid {
-        self.uuid
+        Uuid::from_bytes(self.bytes)
     }
 
     /// Returns the appendix part of the code module's debug identifier.
@@ -140,7 +232,12 @@ impl DebugId {
 
     /// Returns whether this identifier is nil, i.e. it consists only of zeros.
     pub fn is_nil(&self) -> bool {
-        self.uuid.is_nil() && self.appendix() == 0
+        self.bytes.iter().all(|&b| b == 0) && self.appendix == 0
+    }
+
+    /// Returns whether this identifier is from the PDB 2.0 format.
+    pub fn is_pdb20(&self) -> bool {
+        self.typ == 1
     }
 
     /// Returns a wrapper which when formatted via `fmt::Display` will format a
@@ -153,6 +250,20 @@ impl DebugId {
         let is_hyphenated = string.get(8..9) == Some("-");
         if is_hyphenated && !options.allow_hyphens || !string.is_ascii() {
             return None;
+        }
+
+        // Can the PDB 2.0 format match?  This can never be true for a valid UUID.
+        let min_len = if is_hyphenated { 10 } else { 9 };
+        let max_len = if is_hyphenated { 17 } else { 16 };
+        if min_len <= string.len() && string.len() <= max_len {
+            let timestamp_str = string.get(..8)?;
+            let timestamp = u32::from_str_radix(timestamp_str, 16).ok()?;
+            let appendix_str = match is_hyphenated {
+                true => string.get(9..)?,
+                false => string.get(8..)?,
+            };
+            let appendix = u32::from_str_radix(appendix_str, 16).ok()?;
+            return Some(Self::from_timestamp_age(timestamp, appendix));
         }
 
         let uuid_len = if is_hyphenated { 36 } else { 32 };
@@ -176,12 +287,20 @@ impl DebugId {
         let appendix = u32::from_str_radix(appendix_str, 16).ok()?;
         Some(Self::from_parts(uuid, appendix))
     }
+
+    /// Returns the PDB 2.0 timestamp.
+    ///
+    /// Only valid if you know this is a PDB 2.0 debug identifier.
+    fn timestamp(&self) -> u32 {
+        u32::from_be_bytes([self.bytes[0], self.bytes[1], self.bytes[2], self.bytes[3]])
+    }
 }
 
 impl fmt::Debug for DebugId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let uuid = self.uuid();
         f.debug_struct("DebugId")
-            .field("uuid", &self.uuid().to_hyphenated_ref().to_string())
+            .field("uuid", &uuid.to_hyphenated_ref().to_string())
             .field("appendix", &self.appendix())
             .finish()
     }
@@ -189,7 +308,16 @@ impl fmt::Debug for DebugId {
 
 impl fmt::Display for DebugId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        self.uuid.fmt(f)?;
+        match self.is_pdb20() {
+            true => {
+                let timestamp = self.timestamp();
+                write!(f, "{:08X}", timestamp)?;
+            }
+            false => {
+                let uuid = self.uuid();
+                uuid.fmt(f)?;
+            }
+        }
         if self.appendix > 0 {
             write!(f, "-{:x}", { self.appendix })?;
         }
@@ -249,12 +377,16 @@ pub struct BreakpadFormat<'a> {
 
 impl<'a> fmt::Display for BreakpadFormat<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(
-            f,
-            "{:X}{:x}",
-            self.inner.uuid().to_simple_ref(),
-            self.inner.appendix()
-        )
+        match self.inner.is_pdb20() {
+            true => {
+                let timestamp = self.inner.timestamp();
+                write!(f, "{:08X}{:x}", timestamp, self.inner.appendix())
+            }
+            false => {
+                let uuid = self.inner.uuid();
+                write!(f, "{:X}{:x}", uuid.to_simple_ref(), self.inner.appendix())
+            }
+        }
     }
 }
 

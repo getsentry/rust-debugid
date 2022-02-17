@@ -1,17 +1,10 @@
 # Configuration for sentry-craft (https://github.com/getsentry/craft)
-minVersion: "0.23.1"
+minVersion: "0.28.0"
 changelogPolicy: auto
-github:
-  owner: getsentry
-  repo: rust-debugid
+
+artifactProvider:
+  name: none
+
 targets:
   - name: crates
   - name: github
-preReleaseCommand: bash scripts/bump-version.sh
-statusProvider:
-  name: github
-artifactProvider:
-  name: github
-requireNames:
-  - /^.*\.zip$/
-  - /^.*\.tar\.gz$/

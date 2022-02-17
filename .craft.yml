@@ -7,7 +7,6 @@ github:
 targets:
   - name: crates
   - name: github
-changelogPolicy: simple
 preReleaseCommand: bash scripts/bump-version.sh
 statusProvider:
   name: github

@@ -12,7 +12,7 @@ authors = ["Sentry <hello@sentry.io>"]
 edition = "2018"
 
 [dependencies]
-uuid = "0.8.1"
+uuid = "1.0.0"
 serde = { version = "1.0.85", optional = true }
 
 [dev-dependencies]

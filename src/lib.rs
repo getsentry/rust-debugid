@@ -300,7 +300,7 @@ impl fmt::Debug for DebugId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         let uuid = self.uuid();
         f.debug_struct("DebugId")
-            .field("uuid", &uuid.to_hyphenated_ref().to_string())
+            .field("uuid", &uuid.hyphenated().to_string())
             .field("appendix", &self.appendix())
             .finish()
     }
@@ -384,7 +384,7 @@ impl<'a> fmt::Display for BreakpadFormat<'a> {
             }
             false => {
                 let uuid = self.inner.uuid();
-                write!(f, "{:X}{:x}", uuid.to_simple_ref(), self.inner.appendix())
+                write!(f, "{:X}{:x}", uuid.simple(), self.inner.appendix())
             }
         }
     }

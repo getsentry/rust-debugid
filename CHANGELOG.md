@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Bump Minimal Supported Rust Version to 1.46 due to dependencies.
+- Update `uuid` dependency to `1.0`.
+
 ## 0.7.3
 
 - Bump Minimal Supported Rust Version to 1.36 due to dependencies.
